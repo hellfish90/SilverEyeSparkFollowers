@@ -1,0 +1,8 @@
+*.pyc
+docs/_build/
+pyspark.egg-info
+build/
+dist/
+config.json
+result.*
+user_analysis.csv
