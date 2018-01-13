@@ -21,6 +21,7 @@ import sys
 import shutil
 import toyplot
 from sets import Set
+import csv
 
 from pyspark.sql.functions import col
 
@@ -99,9 +100,36 @@ def check_prediction_assertion(row):
     if success == 0 and error == 0 and partial_assert == 0 and partial_assert_error == 0:
         empty_result = 1
 
-    return row[9], success, error, partial_assert, empty_result, partial_assert_error, str(
-        positive_political_party), str(
-            negative_political_party), str(possible_political_party), row[13]
+    positive_result = ""
+    negative_result = ""
+    neutral_result = ""
+
+    if len(positive_political_party) > 1:
+        positive_result = positive_political_party[0]
+        for presult in positive_political_party[1:len(positive_political_party)]:
+            positive_result = positive_result + "," + presult
+
+    elif len(positive_political_party) == 1:
+        positive_result = positive_political_party[0]
+
+    if len(negative_political_party) > 1:
+        negative_result = negative_political_party[0]
+        for presult in negative_political_party[1:len(negative_political_party)]:
+            negative_result = negative_result + "," + presult
+
+    elif len(negative_political_party) == 1:
+        negative_result = negative_political_party[0]
+
+    if len(possible_political_party) > 1:
+        neutral_result = possible_political_party[0]
+        for presult in possible_political_party[1:len(possible_political_party)]:
+            neutral_result = neutral_result +"," + presult
+
+    elif len(possible_political_party) == 1:
+        neutral_result = possible_political_party[0]
+
+    return row[9], success, error, partial_assert, empty_result, partial_assert_error, positive_result, negative_result,\
+           neutral_result, row[13]
 
 
 success = 0
@@ -111,7 +139,11 @@ partial_error_success = 0
 empty_result = 0
 count = 0
 
-for element in clusters_result.rdd.map(check_prediction_assertion).collect():
+checked_results = clusters_result.rdd.map(check_prediction_assertion).collect()
+
+csv_results = []
+
+for element in checked_results:
     print element
     count += 1
     success += element[1]
@@ -119,13 +151,22 @@ for element in clusters_result.rdd.map(check_prediction_assertion).collect():
     partial_success += element[3]
     empty_result += element[4]
     partial_error_success += element[5]
+    csv_partial_result = {"user_id":element[0],"result": element[9], "positive": element[6], "negative": element[7], "neutral": element[8]}
+    csv_results.append(csv_partial_result)
 
 print "____________________________________"
 print "Success -> " + str(success) + "/" + str(count)
 print "Partial Success -> " + str(partial_success) + "/" + str(count)
-print "Partial Error Success -> " + str(partial_error_success) + "/" + str(count)
+print "Partial Success Error-> " + str(partial_error_success) + "/" + str(count)
 print "Error->" + str(error) + "/" + str(count)
 print "Empty Result ->" + str(empty_result) + "/" + str(count)
 print "____________________________________"
 print "Total Assert ->" + str(success + partial_success + partial_error_success) + "/" + str(count)
 print "____________________________________"
+
+f = open('results.csv', 'w')
+for partial_result in csv_results:
+
+    f.write(str(partial_result['user_id']) + ';' +partial_result['result'] + ';' + partial_result['positive'] + ';' + partial_result['negative'] + ';' +
+            partial_result['neutral'] + '\n')
+f.close()

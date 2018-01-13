@@ -13,8 +13,6 @@ class GraphUsersExtractor:
     def __init__(self, twitterUsers):
         self.twitter_users = twitterUsers
 
-
-
     def get_user_by_ids(self, ids):
         f = open(os.path.dirname(os.path.dirname(__file__)) +'/SparkFollowers/config.json', 'r')
         config = json.load(f)
